@@ -87,6 +87,10 @@ export default function HomePage() {
   const [notifyEmail, setNotifyEmail] = useState("");
   const [email, setEmail] = useState("demo@example.com");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [robotA, setRobotA] = useState(() => Math.floor(Math.random() * 8) + 1);
+  const [robotB, setRobotB] = useState(() => Math.floor(Math.random() * 8) + 1);
+  const [robotAnswer, setRobotAnswer] = useState("");
   const [theme, setTheme] = useState<"corporate" | "modern">("corporate");
   const [adminOpen, setAdminOpen] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUserOverview[]>([]);
@@ -156,6 +160,12 @@ export default function HomePage() {
 
   function resetAdBlocks() {
     setAdBlocks(defaultAdBlocks);
+  }
+
+  function resetRobotCheck() {
+    setRobotA(Math.floor(Math.random() * 8) + 1);
+    setRobotB(Math.floor(Math.random() * 8) + 1);
+    setRobotAnswer("");
   }
 
   const isAdminEmail = loggedIn && email.trim().toLowerCase() === ADMIN_EMAIL;
@@ -275,11 +285,22 @@ export default function HomePage() {
       setError("Slaptazodis turi buti bent 8 simboliu.");
       return;
     }
+    if (password !== confirmPassword) {
+      setError("Slaptazodziai nesutampa.");
+      return;
+    }
+    if (Number(robotAnswer) !== robotA + robotB) {
+      setError("Neteisingas roboto patikrinimas.");
+      resetRobotCheck();
+      return;
+    }
     try {
       await register(email, password);
       await login(email, password);
       setLoggedIn(true);
       setPassword("");
+      setConfirmPassword("");
+      resetRobotCheck();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Auth klaida.");
     }
@@ -423,6 +444,16 @@ export default function HomePage() {
         <label>
           Slaptazodis
           <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        </label>
+
+        <label>
+          Pakartok slaptazodi
+          <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+        </label>
+
+        <label>
+          Roboto patikrinimas: kiek yra {robotA} + {robotB}?
+          <input value={robotAnswer} onChange={(event) => setRobotAnswer(event.target.value)} placeholder="Ivesk atsakyma" />
         </label>
 
         <button onClick={handleAuth}>{loggedIn ? "Prisijungta" : "Registruotis ir prisijungti"}</button>
