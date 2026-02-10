@@ -29,6 +29,23 @@ type ResultState = {
 
 type ChecklistItem = { key: string; label: string; target: string; value: string; pass: boolean; priority: string };
 
+type AdBlock = {
+  title: string;
+  note: string;
+  url: string;
+};
+
+const defaultAdBlocks: AdBlock[] = [
+  { title: "Reklama A1", note: "Vieta banneriui 300x250", url: "" },
+  { title: "Reklama A2", note: "Vieta remiamam pasiulymui", url: "" },
+  { title: "Reklama A3", note: "Vieta native reklamai", url: "" },
+  { title: "Reklama A4", note: "Vieta partnerio baneriui", url: "" },
+  { title: "Reklama B1", note: "Vieta banneriui 300x250", url: "" },
+  { title: "Reklama B2", note: "Vieta partnerio nuorodai", url: "" },
+  { title: "Reklama B3", note: "Vieta native reklamai", url: "" },
+  { title: "Reklama B4", note: "Vieta remiamam straipsniui", url: "" }
+];
+
 function isNotMeasured(value: string): boolean {
   const normalized = value.toLowerCase();
   return normalized.includes("n/a") || normalized.includes("nepamatuota");
@@ -47,7 +64,8 @@ const STORAGE_KEYS = {
   url: "seo_project_url",
   notifyEmail: "seo_notify_email",
   token: "seo_token",
-  theme: "seo_theme"
+  theme: "seo_theme",
+  adBlocks: "seo_ad_blocks"
 } as const;
 
 export default function HomePage() {
@@ -57,6 +75,8 @@ export default function HomePage() {
   const [email, setEmail] = useState("demo@example.com");
   const [password, setPassword] = useState("");
   const [theme, setTheme] = useState<"corporate" | "modern">("corporate");
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [adBlocks, setAdBlocks] = useState<AdBlock[]>(defaultAdBlocks);
   const [loggedIn, setLoggedIn] = useState(false);
   const [status, setStatus] = useState<string>("idle");
   const [error, setError] = useState<string>("");
@@ -70,6 +90,7 @@ export default function HomePage() {
     const savedNotifyEmail = window.localStorage.getItem(STORAGE_KEYS.notifyEmail);
     const token = window.localStorage.getItem(STORAGE_KEYS.token);
     const savedTheme = window.localStorage.getItem(STORAGE_KEYS.theme);
+    const savedAdBlocks = window.localStorage.getItem(STORAGE_KEYS.adBlocks);
 
     if (savedEmail) setEmail(savedEmail);
     if (savedName) setName(savedName);
@@ -77,6 +98,16 @@ export default function HomePage() {
     if (savedNotifyEmail) setNotifyEmail(savedNotifyEmail);
     if (token) setLoggedIn(true);
     if (savedTheme === "corporate" || savedTheme === "modern") setTheme(savedTheme);
+    if (savedAdBlocks) {
+      try {
+        const parsed = JSON.parse(savedAdBlocks) as AdBlock[];
+        if (Array.isArray(parsed) && parsed.length === 8) {
+          setAdBlocks(parsed);
+        }
+      } catch {
+        setAdBlocks(defaultAdBlocks);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -98,6 +129,18 @@ export default function HomePage() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.theme, theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.adBlocks, JSON.stringify(adBlocks));
+  }, [adBlocks]);
+
+  function updateAdBlock(index: number, field: keyof AdBlock, value: string) {
+    setAdBlocks((current) => current.map((item, idx) => (idx === index ? { ...item, [field]: value } : item)));
+  }
+
+  function resetAdBlocks() {
+    setAdBlocks(defaultAdBlocks);
+  }
 
   const badge = useMemo(() => {
     if (!result) return "-";
@@ -196,34 +239,20 @@ export default function HomePage() {
   return (
     <main className={`layout-shell ${theme === "modern" ? "theme-modern" : "theme-corporate"}`}>
       <aside className="side-rail">
-        <article className="side-block ad-block">
-          <h4 className="ad-title">
-            <span className="ad-badge">1</span>
-            <span>Reklama A1</span>
-          </h4>
-          <p className="side-note">Vieta banneriui 300x250</p>
-        </article>
-        <article className="side-block ad-block">
-          <h4 className="ad-title">
-            <span className="ad-badge">2</span>
-            <span>Reklama A2</span>
-          </h4>
-          <p className="side-note">Vieta remiamam pasiulymui</p>
-        </article>
-        <article className="side-block ad-block">
-          <h4 className="ad-title">
-            <span className="ad-badge">3</span>
-            <span>Reklama A3</span>
-          </h4>
-          <p className="side-note">Vieta native reklamai</p>
-        </article>
-        <article className="side-block ad-block">
-          <h4 className="ad-title">
-            <span className="ad-badge">4</span>
-            <span>Reklama A4</span>
-          </h4>
-          <p className="side-note">Vieta partnerio baneriui</p>
-        </article>
+        {adBlocks.slice(0, 4).map((block, index) => (
+          <article key={`left-ad-${index}`} className="side-block ad-block">
+            <h4 className="ad-title">
+              <span className="ad-badge">{index + 1}</span>
+              <span>{block.title}</span>
+            </h4>
+            <p className="side-note">{block.note}</p>
+            {block.url && (
+              <a className="ad-link" href={block.url} target="_blank" rel="noreferrer">
+                Atidaryti reklama
+              </a>
+            )}
+          </article>
+        ))}
       </aside>
 
       <div className="page">
@@ -251,8 +280,53 @@ export default function HomePage() {
           >
             Modern SEO Dashboard
           </button>
+          <button className={adminOpen ? "active" : ""} onClick={() => setAdminOpen((v) => !v)} type="button">
+            Admin reklamu meniu
+          </button>
         </div>
       </section>
+
+      {adminOpen && (
+        <section className="panel admin-panel">
+          <div className="admin-header">
+            <h2>Reklamu valdymas</h2>
+            <button type="button" onClick={resetAdBlocks}>
+              Atstatyti numatytus blokus
+            </button>
+          </div>
+          <div className="admin-grid">
+            {adBlocks.map((block, index) => (
+              <article key={`admin-ad-${index}`} className="admin-item">
+                <h4>Blokas {index + 1}</h4>
+                <label>
+                  Pavadinimas
+                  <input
+                    value={block.title}
+                    onChange={(event) => updateAdBlock(index, "title", event.target.value)}
+                    placeholder="Reklamos pavadinimas"
+                  />
+                </label>
+                <label>
+                  Tekstas
+                  <input
+                    value={block.note}
+                    onChange={(event) => updateAdBlock(index, "note", event.target.value)}
+                    placeholder="Trumpas aprasymas"
+                  />
+                </label>
+                <label>
+                  Nuoroda
+                  <input
+                    value={block.url}
+                    onChange={(event) => updateAdBlock(index, "url", event.target.value)}
+                    placeholder="https://..."
+                  />
+                </label>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <label>
@@ -466,34 +540,20 @@ export default function HomePage() {
       </div>
 
       <aside className="side-rail">
-        <article className="side-block ad-block">
-          <h4 className="ad-title">
-            <span className="ad-badge">5</span>
-            <span>Reklama B1</span>
-          </h4>
-          <p className="side-note">Vieta banneriui 300x250</p>
-        </article>
-        <article className="side-block ad-block">
-          <h4 className="ad-title">
-            <span className="ad-badge">6</span>
-            <span>Reklama B2</span>
-          </h4>
-          <p className="side-note">Vieta partnerio nuorodai</p>
-        </article>
-        <article className="side-block ad-block">
-          <h4 className="ad-title">
-            <span className="ad-badge">7</span>
-            <span>Reklama B3</span>
-          </h4>
-          <p className="side-note">Vieta native reklamai</p>
-        </article>
-        <article className="side-block ad-block">
-          <h4 className="ad-title">
-            <span className="ad-badge">8</span>
-            <span>Reklama B4</span>
-          </h4>
-          <p className="side-note">Vieta remiamam straipsniui</p>
-        </article>
+        {adBlocks.slice(4).map((block, index) => (
+          <article key={`right-ad-${index}`} className="side-block ad-block">
+            <h4 className="ad-title">
+              <span className="ad-badge">{index + 5}</span>
+              <span>{block.title}</span>
+            </h4>
+            <p className="side-note">{block.note}</p>
+            {block.url && (
+              <a className="ad-link" href={block.url} target="_blank" rel="noreferrer">
+                Atidaryti reklama
+              </a>
+            )}
+          </article>
+        ))}
       </aside>
     </main>
   );

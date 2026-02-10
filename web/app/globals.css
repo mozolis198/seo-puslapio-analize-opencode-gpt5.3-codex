@@ -145,6 +145,14 @@ body {
   gap: 8px;
 }
 
+.ad-link {
+  margin-top: 4px;
+  text-decoration: none;
+  color: var(--brand);
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
 .ad-badge {
   width: 24px;
   height: 24px;
@@ -294,6 +302,40 @@ button:disabled {
   color: var(--muted);
 }
 
+.admin-panel {
+  margin-top: 16px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-header h2 {
+  margin: 0;
+  font-family: var(--font-serif), Georgia, serif;
+}
+
+.admin-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #f9fcff;
+}
+
+.admin-item h4 {
+  margin: 0 0 10px;
+}
+
 .checklist-panel {
   margin-top: 14px;
 }
@@ -362,6 +404,10 @@ li p {
   .theme-switch {
     width: 100%;
     display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-grid {
     grid-template-columns: 1fr;
   }
 
