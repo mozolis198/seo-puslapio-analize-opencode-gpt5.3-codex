@@ -29,6 +29,11 @@ type ResultState = {
 
 type ChecklistItem = { key: string; label: string; target: string; value: string; pass: boolean; priority: string };
 
+function isNotMeasured(value: string): boolean {
+  const normalized = value.toLowerCase();
+  return normalized.includes("n/a") || normalized.includes("nepamatuota");
+}
+
 const statusText: Record<string, string> = {
   queued: "In queue",
   running: "Running scan",
@@ -118,9 +123,9 @@ export default function HomePage() {
 
   const groupedChecklist = useMemo(() => {
     return {
-      do_now: technicalChecklist.filter((item) => !item.pass && item.priority === "do_now"),
-      this_week: technicalChecklist.filter((item) => !item.pass && item.priority === "this_week"),
-      later: technicalChecklist.filter((item) => !item.pass && item.priority === "later")
+      do_now: technicalChecklist.filter((item) => !item.pass && !isNotMeasured(item.value) && item.priority === "do_now"),
+      this_week: technicalChecklist.filter((item) => !item.pass && !isNotMeasured(item.value) && item.priority === "this_week"),
+      later: technicalChecklist.filter((item) => !item.pass && !isNotMeasured(item.value) && item.priority === "later")
     };
   }, [technicalChecklist]);
 
@@ -191,23 +196,33 @@ export default function HomePage() {
   return (
     <main className={`layout-shell ${theme === "modern" ? "theme-modern" : "theme-corporate"}`}>
       <aside className="side-rail">
-        <article className="side-block">
-          <h4>Dabar</h4>
-          <p className="side-value">{groupedChecklist.do_now.length}</p>
-          <p className="side-note">Kritiniai neatitikimai</p>
-        </article>
-        <article className="side-block">
-          <h4>Sia savaite</h4>
-          <p className="side-value">{groupedChecklist.this_week.length}</p>
-          <p className="side-note">Vidutinio prioriteto darbai</p>
-        </article>
         <article className="side-block ad-block">
-          <h4>Reklama A1</h4>
+          <h4 className="ad-title">
+            <span className="ad-badge">1</span>
+            <span>Reklama A1</span>
+          </h4>
           <p className="side-note">Vieta banneriui 300x250</p>
         </article>
         <article className="side-block ad-block">
-          <h4>Reklama A2</h4>
+          <h4 className="ad-title">
+            <span className="ad-badge">2</span>
+            <span>Reklama A2</span>
+          </h4>
           <p className="side-note">Vieta remiamam pasiulymui</p>
+        </article>
+        <article className="side-block ad-block">
+          <h4 className="ad-title">
+            <span className="ad-badge">3</span>
+            <span>Reklama A3</span>
+          </h4>
+          <p className="side-note">Vieta native reklamai</p>
+        </article>
+        <article className="side-block ad-block">
+          <h4 className="ad-title">
+            <span className="ad-badge">4</span>
+            <span>Reklama A4</span>
+          </h4>
+          <p className="side-note">Vieta partnerio baneriui</p>
         </article>
       </aside>
 
@@ -215,6 +230,12 @@ export default function HomePage() {
       <section className="hero">
         <h1>SEO Puslapio Analize</h1>
         <p>Greitai gauk isvadas ir prioritetinius veiksmus puslapio matomumui gerinti.</p>
+        <nav className="quick-links">
+          <a href="/#auditas">SEO auditas</a>
+          <a href="/#checklist">Techninis checklist</a>
+          <a href="/#planas">Veiksmu planas</a>
+          <a href="/#gidas">SEO gidas</a>
+        </nav>
         <div className="theme-switch">
           <button
             className={theme === "corporate" ? "active" : ""}
@@ -267,6 +288,42 @@ export default function HomePage() {
 
         {status !== "idle" && <p className="status">Statusas: {statusText[status] || status}</p>}
         {error && <p className="error">{error}</p>}
+      </section>
+
+      <section id="auditas" className="panel seo-content">
+        <h2>Ka duoda SEO auditas tavo puslapiui</h2>
+        <p>
+          SEO auditas padeda aiskiai suprasti, kas stabdo tavo matomuma paieskoje. Dažniausiai problema nebuna viena: kartu veikia
+          technines klaidos, silpna puslapio struktura, nepakankamas turinys ir netinkami puslapio signalai paieskos sistemoms.
+          Kai viskas sudedama i viena ataskaita, gali greitai priimti sprendimus ir tvarkyti tai, kas duoda didziausia poveiki.
+        </p>
+        <p>
+          Si sistema pirmiausia tikrina indeksavimo logika: HTTP statusa, canonical, robots taisykles ir sitemap buvima. Tada
+          vertina turinio kokybe: title, meta aprasyma, H1-H2 struktura, turinio gyli, vidines nuorodas ir Open Graph signalus.
+          Galiausiai pateikia prioritetus pagal darbus: ka daryti dabar, ka planuoti sia savaite ir ka palikti velesniam etapui.
+          Tokia eiga leidzia isvengti chaoso ir nekaupti technines skolos.
+        </p>
+      </section>
+
+      <section id="gidas" className="panel seo-content">
+        <h2>Praktinis SEO gerinimo gidas</h2>
+        <p>
+          Pradek nuo puslapio pagrindo. Pirmas tikslas yra uztikrinti, kad puslapis butu pasiekiamas ir teisingai indeksuojamas.
+          Jei canonical nerastas, paieskos sistema gali matyti kelias to paties turinio versijas. Jei nera sitemap, crawleriui
+          sunkiau aptikti svarbius URL. Jei title ar meta aprasymas per trumpi, prarandi paspaudimus paieskos rezultatuose.
+        </p>
+        <p>
+          Antras tikslas - turinio verte. Kiekvienas svarbus puslapis turi tureti aisku tiksla, bent viena stipru H2 skyriu ir
+          pakankama teksto gyli, kad atsakytu i vartotojo klausima. Jei turinys labai trumpas, sunkiau konkuruoti su stipresniais
+          rezultatais. Taip pat svarbu vidines nuorodos: jos padeda perduoti autoriteta tarp puslapiu ir rodo, kurie URL yra
+          prioritetiniai tavo svetaineje.
+        </p>
+        <p>
+          Trecias tikslas - nuoseklus tobulinimas. Po kiekvieno pakeitimo paleisk pakartotine analize ir stebek score pokyti.
+          Jei score kyla, toliau gilink tas pacias kryptis. Jei score stovi vietoje, ziurek i checklist punktus su didziausiu
+          poveikiu ir zemiausiu igyvendinimo sudetingumu. Tokiu budu gauni ne tik grazesne ataskaita, bet ir realu augima
+          organiniame sraute.
+        </p>
       </section>
 
       {result && (
@@ -325,13 +382,16 @@ export default function HomePage() {
             </article>
           </div>
 
-          <article className="panel checklist-panel">
+          <article id="checklist" className="panel checklist-panel">
             <h3>Techninis checklist ({checklistPassedCount}/{checklistTotal})</h3>
             <ul className="checklist-list">
               {technicalChecklist.map((item) => (
-                <li key={item.key} className={`check-item ${item.pass ? "pass" : "fail"}`}>
+                <li
+                  key={item.key}
+                  className={`check-item ${isNotMeasured(item.value) ? "na" : item.pass ? "pass" : "fail"}`}
+                >
                   <strong>{item.label}</strong>
-                  <p>{item.pass ? "PASS" : "FAIL"}</p>
+                  <p>{isNotMeasured(item.value) ? "N/A" : item.pass ? "PASS" : "FAIL"}</p>
                   <p>Tikslas: {item.target}</p>
                   <p>Reiksme: {item.value}</p>
                 </li>
@@ -339,7 +399,7 @@ export default function HomePage() {
             </ul>
           </article>
 
-          <article className="panel checklist-panel">
+          <article id="planas" className="panel checklist-panel">
             <h3>Prioritetu grupes</h3>
             <div className="priority-grid">
               <div>
@@ -406,25 +466,33 @@ export default function HomePage() {
       </div>
 
       <aside className="side-rail">
-        <article className="side-block">
-          <h4>Veliau</h4>
-          <p className="side-value">{groupedChecklist.later.length}</p>
-          <p className="side-note">Zemo prioriteto darbai</p>
-        </article>
-        <article className="side-block">
-          <h4>Progresas</h4>
-          <p className="side-value">
-            {checklistPassedCount}/{checklistTotal}
-          </p>
-          <p className="side-note">TOP 20 checklist rezultatas</p>
-        </article>
         <article className="side-block ad-block">
-          <h4>Reklama B1</h4>
+          <h4 className="ad-title">
+            <span className="ad-badge">5</span>
+            <span>Reklama B1</span>
+          </h4>
           <p className="side-note">Vieta banneriui 300x250</p>
         </article>
         <article className="side-block ad-block">
-          <h4>Reklama B2</h4>
+          <h4 className="ad-title">
+            <span className="ad-badge">6</span>
+            <span>Reklama B2</span>
+          </h4>
           <p className="side-note">Vieta partnerio nuorodai</p>
+        </article>
+        <article className="side-block ad-block">
+          <h4 className="ad-title">
+            <span className="ad-badge">7</span>
+            <span>Reklama B3</span>
+          </h4>
+          <p className="side-note">Vieta native reklamai</p>
+        </article>
+        <article className="side-block ad-block">
+          <h4 className="ad-title">
+            <span className="ad-badge">8</span>
+            <span>Reklama B4</span>
+          </h4>
+          <p className="side-note">Vieta remiamam straipsniui</p>
         </article>
       </aside>
     </main>

@@ -12,6 +12,7 @@ from datetime import datetime
 from email.message import EmailMessage
 from urllib.parse import urlparse
 from uuid import uuid4
+from typing import Literal
 
 import jwt
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
@@ -100,6 +101,35 @@ def build_top20_checklist(audit: AuditResult) -> list[ChecklistItem]:
     tbt = metrics.get("lighthouse_tbt_ms")
     lighthouse_seo = metrics.get("lighthouse_seo_score")
 
+    def optional_checklist_item(
+        *,
+        key: str,
+        label: str,
+        target: str,
+        value: float | None,
+        threshold_check: bool,
+        format_value: str,
+        priority: Literal["do_now", "this_week", "later"],
+    ) -> ChecklistItem:
+        if value is None:
+            return ChecklistItem(
+                key=key,
+                label=label,
+                target=target,
+                value="n/a (nepamatuota)",
+                passed=True,
+                priority="later",
+            )
+
+        return ChecklistItem(
+            key=key,
+            label=label,
+            target=target,
+            value=format_value,
+            passed=threshold_check,
+            priority=priority,
+        )
+
     items: list[ChecklistItem] = [
         ChecklistItem(key="http_200", label="HTTP status is 200", target="status = 200", value=str(int(metrics.get("status_code", 0))), passed=metrics.get("status_code", 0) == 200, priority="do_now"),
         ChecklistItem(key="indexable", label="Page is indexable", target="no noindex", value=str(int(metrics.get("noindex_detected", 0))), passed=metrics.get("noindex_detected", 0) == 0, priority="do_now"),
@@ -116,13 +146,55 @@ def build_top20_checklist(audit: AuditResult) -> list[ChecklistItem]:
         ChecklistItem(key="https", label="HTTPS enabled", target="1", value=str(int(metrics.get("https_enabled", 0))), passed=metrics.get("https_enabled", 0) == 1, priority="do_now"),
         ChecklistItem(key="mixed_content", label="Mixed content resources", target="0", value=str(int(metrics.get("mixed_content_count", 0))), passed=metrics.get("mixed_content_count", 0) == 0, priority="do_now"),
         ChecklistItem(key="sitemap", label="Sitemap.xml valid", target="present = 1", value=str(int(metrics.get("sitemap_ok", 0))), passed=metrics.get("sitemap_ok", 0) == 1, priority="this_week"),
-        ChecklistItem(key="lcp", label="LCP", target="<=2500 ms", value=(f"{int(lcp)}" if lcp is not None else "n/a"), passed=(lcp is not None and lcp <= 2500), priority="do_now"),
-        ChecklistItem(key="cls", label="CLS", target="<=0.10", value=(f"{cls:.3f}" if cls is not None else "n/a"), passed=(cls is not None and cls <= 0.10), priority="do_now"),
-        ChecklistItem(key="tbt", label="TBT", target="<=200 ms", value=(f"{int(tbt)}" if tbt is not None else "n/a"), passed=(tbt is not None and tbt <= 200), priority="this_week"),
+        optional_checklist_item(
+            key="lcp",
+            label="LCP",
+            target="<=2500 ms",
+            value=lcp,
+            threshold_check=(lcp is not None and lcp <= 2500),
+            format_value=f"{int(lcp)}" if lcp is not None else "",
+            priority="do_now",
+        ),
+        optional_checklist_item(
+            key="cls",
+            label="CLS",
+            target="<=0.10",
+            value=cls,
+            threshold_check=(cls is not None and cls <= 0.10),
+            format_value=f"{cls:.3f}" if cls is not None else "",
+            priority="do_now",
+        ),
+        optional_checklist_item(
+            key="tbt",
+            label="TBT",
+            target="<=200 ms",
+            value=tbt,
+            threshold_check=(tbt is not None and tbt <= 200),
+            format_value=f"{int(tbt)}" if tbt is not None else "",
+            priority="this_week",
+        ),
         ChecklistItem(key="open_graph", label="Open Graph complete", target="title+description", value=str(int(metrics.get("og_complete", 0))), passed=metrics.get("og_complete", 0) == 1, priority="later"),
-        ChecklistItem(key="lh_seo", label="Lighthouse SEO", target=">=90", value=(f"{int(lighthouse_seo)}" if lighthouse_seo is not None else "n/a"), passed=(lighthouse_seo is not None and lighthouse_seo >= 90), priority="this_week"),
+        optional_checklist_item(
+            key="lh_seo",
+            label="Lighthouse SEO",
+            target=">=90",
+            value=lighthouse_seo,
+            threshold_check=(lighthouse_seo is not None and lighthouse_seo >= 90),
+            format_value=f"{int(lighthouse_seo)}" if lighthouse_seo is not None else "",
+            priority="this_week",
+        ),
     ]
     return items
+
+
+def calculate_hybrid_score(issue_score: int, checklist: list[ChecklistItem]) -> tuple[int, float]:
+    measured = [item for item in checklist if "n/a" not in item.value.lower() and "nepamatuota" not in item.value.lower()]
+    if not measured:
+        return issue_score, float(issue_score)
+
+    checklist_score = (sum(1 for item in measured if item.passed) / len(measured)) * 100
+    final_score = round((issue_score * 0.6) + (checklist_score * 0.4))
+    return int(final_score), checklist_score
 
 
 def create_access_token(user_id: str, email: str) -> str:
@@ -180,10 +252,9 @@ def run_audit(audit_id: str) -> None:
         audit_metrics.update(run_lighthouse_audit(audit.url))
 
         issues = build_issues(snapshot, audit_metrics=audit_metrics)
-        score = calculate_score(issues, snapshot.status_code)
+        issue_score = calculate_score(issues, snapshot.status_code)
 
         audit.issues = issues
-        audit.score = score
         audit.metrics = {
             "response_ms": snapshot.response_ms,
             "status_code": float(snapshot.status_code),
@@ -208,6 +279,15 @@ def run_audit(audit_id: str) -> None:
         audit.metrics.update(audit_metrics)
         audit.recommendations = to_recommendations(audit)
         audit.checklist = build_top20_checklist(audit)
+        score, checklist_score = calculate_hybrid_score(issue_score, audit.checklist)
+        audit.score = score
+        audit.metrics.update(
+            {
+                "issue_score": float(issue_score),
+                "checklist_score": float(round(checklist_score, 2)),
+                "hybrid_score": float(score),
+            }
+        )
         audit.status = "completed"
         audit.finished_at = datetime.utcnow()
         store.complete_audit(audit)

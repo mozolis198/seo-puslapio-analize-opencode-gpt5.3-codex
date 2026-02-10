@@ -1,5 +1,11 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+function clearTokenIfUnauthorized(response: Response): void {
+  if (response.status === 401 && typeof window !== "undefined") {
+    window.localStorage.removeItem("seo_token");
+  }
+}
+
 async function readError(response: Response, fallback: string): Promise<string> {
   try {
     const data = await response.json();
@@ -56,6 +62,7 @@ export async function register(email: string, password: string): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password })
   });
+  clearTokenIfUnauthorized(response);
   if (!response.ok && response.status !== 409) {
     throw new Error(await readError(response, "Failed to register user"));
   }
@@ -68,6 +75,7 @@ export async function login(email: string, password: string): Promise<void> {
     body: JSON.stringify({ email, password })
   });
   if (!response.ok) {
+    clearTokenIfUnauthorized(response);
     throw new Error(await readError(response, "Failed to login"));
   }
   const data = await response.json();
@@ -84,6 +92,7 @@ export async function createProject(name: string, baseUrl: string, notifyEmail?:
   });
 
   if (!response.ok) {
+    clearTokenIfUnauthorized(response);
     throw new Error(await readError(response, "Failed to create project"));
   }
 
@@ -98,6 +107,7 @@ export async function startAudit(projectId: string, url: string): Promise<AuditS
   });
 
   if (!response.ok) {
+    clearTokenIfUnauthorized(response);
     throw new Error(await readError(response, "Failed to start audit"));
   }
 
@@ -107,6 +117,7 @@ export async function startAudit(projectId: string, url: string): Promise<AuditS
 export async function getAuditStatus(auditId: string): Promise<AuditStatus> {
   const response = await fetch(`${API_URL}/audits/${auditId}/status`, { headers: authHeaders() });
   if (!response.ok) {
+    clearTokenIfUnauthorized(response);
     throw new Error(await readError(response, "Failed to read audit status"));
   }
   return response.json();
@@ -115,6 +126,7 @@ export async function getAuditStatus(auditId: string): Promise<AuditStatus> {
 export async function getAuditResults(auditId: string): Promise<any> {
   const response = await fetch(`${API_URL}/audits/${auditId}/results`, { headers: authHeaders() });
   if (!response.ok) {
+    clearTokenIfUnauthorized(response);
     throw new Error(await readError(response, "Failed to read audit results"));
   }
   return response.json();
@@ -145,6 +157,7 @@ export async function createSchedule(projectId: string, url: string): Promise<Sc
     })
   });
   if (!response.ok) {
+    clearTokenIfUnauthorized(response);
     throw new Error(await readError(response, "Failed to create schedule"));
   }
   return response.json();
