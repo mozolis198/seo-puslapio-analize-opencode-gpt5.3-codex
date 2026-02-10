@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createProject,
   createSchedule,
+  getAdminUsersOverview,
   getAuditReportUrl,
   getAuditResults,
   getAuditStatus,
@@ -33,6 +34,16 @@ type AdBlock = {
   title: string;
   note: string;
   url: string;
+};
+
+type AdminUserOverview = {
+  user_id: string;
+  email: string;
+  created_at: string;
+  projects_count: number;
+  audits_count: number;
+  last_audit_at: string | null;
+  pages_checked: string[];
 };
 
 const defaultAdBlocks: AdBlock[] = [
@@ -68,6 +79,8 @@ const STORAGE_KEYS = {
   adBlocks: "seo_ad_blocks"
 } as const;
 
+const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "mozolis@gmail.com").toLowerCase();
+
 export default function HomePage() {
   const [name, setName] = useState("Mano projektas");
   const [url, setUrl] = useState("https://example.com");
@@ -76,6 +89,9 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [theme, setTheme] = useState<"corporate" | "modern">("corporate");
   const [adminOpen, setAdminOpen] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUserOverview[]>([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [adminUsersError, setAdminUsersError] = useState("");
   const [adBlocks, setAdBlocks] = useState<AdBlock[]>(defaultAdBlocks);
   const [loggedIn, setLoggedIn] = useState(false);
   const [status, setStatus] = useState<string>("idle");
@@ -141,6 +157,39 @@ export default function HomePage() {
   function resetAdBlocks() {
     setAdBlocks(defaultAdBlocks);
   }
+
+  const isAdminEmail = loggedIn && email.trim().toLowerCase() === ADMIN_EMAIL;
+
+  useEffect(() => {
+    if (!isAdminEmail || !adminOpen) {
+      return;
+    }
+
+    let cancelled = false;
+    setAdminUsersLoading(true);
+    setAdminUsersError("");
+
+    getAdminUsersOverview()
+      .then((items) => {
+        if (!cancelled) {
+          setAdminUsers(items);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setAdminUsersError(error instanceof Error ? error.message : "Nepavyko uzkrauti vartotoju saraso");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAdminUsersLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdminEmail, adminOpen]);
 
   const badge = useMemo(() => {
     if (!result) return "-";
@@ -280,13 +329,20 @@ export default function HomePage() {
           >
             Modern SEO Dashboard
           </button>
-          <button className={adminOpen ? "active" : ""} onClick={() => setAdminOpen((v) => !v)} type="button">
-            Admin reklamu meniu
-          </button>
+        </div>
+
+        <div className="admin-access">
+          {isAdminEmail ? (
+            <button className={adminOpen ? "active" : ""} onClick={() => setAdminOpen((v) => !v)} type="button">
+              {adminOpen ? "Uzdaryti admin meniu" : "Atidaryti admin meniu"}
+            </button>
+          ) : (
+            <p className="admin-hint">Admin meniu matomas tik prisijungus su admin el. pastu: {ADMIN_EMAIL}</p>
+          )}
         </div>
       </section>
 
-      {adminOpen && (
+      {isAdminEmail && adminOpen && (
         <section className="panel admin-panel">
           <div className="admin-header">
             <h2>Reklamu valdymas</h2>
@@ -294,6 +350,36 @@ export default function HomePage() {
               Atstatyti numatytus blokus
             </button>
           </div>
+
+          <article className="admin-users">
+            <h3>Vartotoju sarasas ir tikrinti puslapiai</h3>
+            {adminUsersLoading && <p>Kraunamas vartotoju sarasas...</p>}
+            {adminUsersError && <p className="error">{adminUsersError}</p>}
+            {!adminUsersLoading && !adminUsersError && adminUsers.length === 0 && <p>Kol kas nera vartotoju duomenu.</p>}
+
+            {!adminUsersLoading && !adminUsersError && adminUsers.length > 0 && (
+              <div className="admin-users-grid">
+                {adminUsers.map((item) => (
+                  <article key={item.user_id} className="admin-user-item">
+                    <h4>{item.email}</h4>
+                    <p>
+                      Projektai: {item.projects_count} | Auditai: {item.audits_count}
+                    </p>
+                    <p>Paskutinis auditas: {item.last_audit_at ? new Date(item.last_audit_at).toLocaleString() : "-"}</p>
+                    <p>Tikrinti puslapiai:</p>
+                    <ul>
+                      {item.pages_checked.length > 0 ? (
+                        item.pages_checked.map((pageUrl) => <li key={`${item.user_id}-${pageUrl}`}>{pageUrl}</li>)
+                      ) : (
+                        <li>Nera nuskenuotu puslapiu</li>
+                      )}
+                    </ul>
+                  </article>
+                ))}
+              </div>
+            )}
+          </article>
+
           <div className="admin-grid">
             {adBlocks.map((block, index) => (
               <article key={`admin-ad-${index}`} className="admin-item">

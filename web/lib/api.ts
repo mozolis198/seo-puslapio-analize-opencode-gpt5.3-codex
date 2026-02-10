@@ -56,6 +56,16 @@ export type ScheduleItem = {
   enabled: boolean;
 };
 
+export type AdminUserOverview = {
+  user_id: string;
+  email: string;
+  created_at: string;
+  projects_count: number;
+  audits_count: number;
+  last_audit_at: string | null;
+  pages_checked: string[];
+};
+
 export async function register(email: string, password: string): Promise<void> {
   const response = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
@@ -161,4 +171,14 @@ export async function createSchedule(projectId: string, url: string): Promise<Sc
     throw new Error(await readError(response, "Failed to create schedule"));
   }
   return response.json();
+}
+
+export async function getAdminUsersOverview(): Promise<AdminUserOverview[]> {
+  const response = await fetch(`${API_URL}/admin/users-overview`, { headers: authHeaders() });
+  if (!response.ok) {
+    clearTokenIfUnauthorized(response);
+    throw new Error(await readError(response, "Failed to load admin users overview"));
+  }
+  const payload = await response.json();
+  return payload.items || [];
 }

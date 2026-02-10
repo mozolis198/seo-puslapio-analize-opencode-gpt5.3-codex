@@ -82,6 +82,20 @@ body {
   padding: 6px;
 }
 
+.admin-access {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-hint {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .theme-switch button {
   padding: 8px 10px;
   font-size: 0.84rem;
@@ -325,6 +339,40 @@ button:disabled {
   gap: 12px;
 }
 
+.admin-users {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #f7fbff;
+}
+
+.admin-users h3 {
+  margin: 0 0 10px;
+}
+
+.admin-users-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-user-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+
+.admin-user-item h4 {
+  margin: 0 0 6px;
+}
+
+.admin-user-item p {
+  margin: 0 0 6px;
+  color: var(--muted);
+}
+
 .admin-item {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -407,7 +455,15 @@ li p {
     grid-template-columns: 1fr;
   }
 
+  .admin-access {
+    grid-template-columns: 1fr;
+  }
+
   .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-users-grid {
     grid-template-columns: 1fr;
   }
 

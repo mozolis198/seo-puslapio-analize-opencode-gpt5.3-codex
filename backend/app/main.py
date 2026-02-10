@@ -54,6 +54,7 @@ store = DataStore()
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 redis_client = Redis.from_url(REDIS_URL)
 audit_queue = Queue("audits", connection=redis_client)
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "mozolis@gmail.com").lower()
 
 JWT_SECRET = os.getenv("JWT_SECRET", "change-me-in-production")
 JWT_ALGORITHM = "HS256"
@@ -236,6 +237,11 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
         return {"id": user_id, "email": email}
     except jwt.PyJWTError as error:
         raise HTTPException(status_code=401, detail="Invalid token") from error
+
+
+def assert_admin(current_user: dict[str, str]) -> None:
+    if current_user["email"].lower() != ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="Admin access required")
 
 
 def run_audit(audit_id: str) -> None:
@@ -578,6 +584,12 @@ def create_schedule(payload: ScheduleAuditRequest, current_user: dict[str, str] 
 @app.get("/schedules")
 def list_schedules(current_user: dict[str, str] = Depends(get_current_user)) -> dict[str, object]:
     return {"items": store.list_schedules_for_user(current_user["id"])}
+
+
+@app.get("/admin/users-overview")
+def get_admin_users_overview(current_user: dict[str, str] = Depends(get_current_user)) -> dict[str, object]:
+    assert_admin(current_user)
+    return {"items": store.get_admin_users_overview()}
 
 
 @app.get("/audits/{audit_id}/report.pdf")

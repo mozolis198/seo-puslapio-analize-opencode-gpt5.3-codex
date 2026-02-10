@@ -367,3 +367,50 @@ class DataStore:
                 return
             row.last_run_at = when_utc
             session.commit()
+
+    def get_admin_users_overview(self) -> list[dict[str, object]]:
+        with self._session() as session:
+            users = session.execute(select(UserEntity).order_by(desc(UserEntity.created_at))).scalars().all()
+            results: list[dict[str, object]] = []
+
+            for user in users:
+                projects = session.execute(select(ProjectEntity).where(ProjectEntity.user_id == user.id)).scalars().all()
+                project_ids = [item.id for item in projects]
+
+                audits: list[AuditEntity] = []
+                if project_ids:
+                    audits = (
+                        session.execute(
+                            select(AuditEntity)
+                            .where(AuditEntity.project_id.in_(project_ids))
+                            .order_by(desc(AuditEntity.created_at))
+                        )
+                        .scalars()
+                        .all()
+                    )
+
+                pages_checked: list[str] = []
+                seen: set[str] = set()
+                for audit in audits:
+                    if audit.url in seen:
+                        continue
+                    seen.add(audit.url)
+                    pages_checked.append(audit.url)
+                    if len(pages_checked) >= 8:
+                        break
+
+                last_audit_at = audits[0].created_at.isoformat() if audits else None
+
+                results.append(
+                    {
+                        "user_id": user.id,
+                        "email": user.email,
+                        "created_at": user.created_at.isoformat(),
+                        "projects_count": len(projects),
+                        "audits_count": len(audits),
+                        "last_audit_at": last_audit_at,
+                        "pages_checked": pages_checked,
+                    }
+                )
+
+            return results
