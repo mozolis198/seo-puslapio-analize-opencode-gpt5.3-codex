@@ -74,6 +74,10 @@ function mergeAdBlocksWithDefaults(saved: unknown): AdBlock[] {
   }
 
   return defaultAdBlocks.map((fallback, index) => {
+    if (index === 1) {
+      return fallback;
+    }
+
     const rawItem = saved[index];
     if (!rawItem || typeof rawItem !== "object") {
       return fallback;
@@ -84,14 +88,11 @@ function mergeAdBlocksWithDefaults(saved: unknown): AdBlock[] {
     const note = typeof item.note === "string" ? item.note.trim() : "";
     const url = typeof item.url === "string" ? item.url.trim() : "";
     const isLegacyPlaceholder = /^Reklama\s+[AB]\d$/i.test(title);
-    const samePartnerLegacyTitle = fallback.title.toLowerCase().includes("se ranking") && title.toLowerCase().includes("se ranking");
-    const shouldUseDefaultUrl =
-      !url && Boolean(fallback.url) && (isLegacyPlaceholder || title === fallback.title || !title || samePartnerLegacyTitle);
-    const shouldUseDefaultText = samePartnerLegacyTitle;
+    const shouldUseDefaultUrl = !url && Boolean(fallback.url) && (isLegacyPlaceholder || title === fallback.title || !title);
 
     return {
-      title: shouldUseDefaultText ? fallback.title : title || fallback.title,
-      note: shouldUseDefaultText ? fallback.note : note || fallback.note,
+      title: title || fallback.title,
+      note: note || fallback.note,
       url: shouldUseDefaultUrl ? fallback.url : url
     };
   });
