@@ -84,11 +84,14 @@ function mergeAdBlocksWithDefaults(saved: unknown): AdBlock[] {
     const note = typeof item.note === "string" ? item.note.trim() : "";
     const url = typeof item.url === "string" ? item.url.trim() : "";
     const isLegacyPlaceholder = /^Reklama\s+[AB]\d$/i.test(title);
-    const shouldUseDefaultUrl = !url && Boolean(fallback.url) && (isLegacyPlaceholder || title === fallback.title || !title);
+    const samePartnerLegacyTitle = fallback.title.toLowerCase().includes("se ranking") && title.toLowerCase().includes("se ranking");
+    const shouldUseDefaultUrl =
+      !url && Boolean(fallback.url) && (isLegacyPlaceholder || title === fallback.title || !title || samePartnerLegacyTitle);
+    const shouldUseDefaultText = samePartnerLegacyTitle;
 
     return {
-      title: title || fallback.title,
-      note: note || fallback.note,
+      title: shouldUseDefaultText ? fallback.title : title || fallback.title,
+      note: shouldUseDefaultText ? fallback.note : note || fallback.note,
       url: shouldUseDefaultUrl ? fallback.url : url
     };
   });
