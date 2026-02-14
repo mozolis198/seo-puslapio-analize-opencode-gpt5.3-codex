@@ -62,8 +62,15 @@ export type AdminUserOverview = {
   created_at: string;
   projects_count: number;
   audits_count: number;
+  average_score: number | null;
   last_audit_at: string | null;
-  pages_checked: string[];
+  pages_checked: Array<{
+    url: string;
+    audits_count: number;
+    last_status: string;
+    last_score: number | null;
+    last_audit_at: string;
+  }>;
 };
 
 export async function register(email: string, password: string): Promise<void> {

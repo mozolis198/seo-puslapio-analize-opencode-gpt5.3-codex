@@ -42,8 +42,15 @@ type AdminUserOverview = {
   created_at: string;
   projects_count: number;
   audits_count: number;
+  average_score: number | null;
   last_audit_at: string | null;
-  pages_checked: string[];
+  pages_checked: Array<{
+    url: string;
+    audits_count: number;
+    last_status: string;
+    last_score: number | null;
+    last_audit_at: string;
+  }>;
 };
 
 const defaultAdBlocks: AdBlock[] = [
@@ -88,6 +95,7 @@ export default function HomePage() {
   const [email, setEmail] = useState("demo@example.com");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"register" | "login">("register");
   const [robotA, setRobotA] = useState(() => Math.floor(Math.random() * 8) + 1);
   const [robotB, setRobotB] = useState(() => Math.floor(Math.random() * 8) + 1);
   const [robotAnswer, setRobotAnswer] = useState("");
@@ -100,6 +108,7 @@ export default function HomePage() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [status, setStatus] = useState<string>("idle");
   const [error, setError] = useState<string>("");
+  const [authNotice, setAuthNotice] = useState<string>("");
   const [auditId, setAuditId] = useState<string>("");
   const [result, setResult] = useState<ResultState>(null);
 
@@ -279,8 +288,13 @@ export default function HomePage() {
     }
   }
 
-  async function handleAuth() {
+  async function handleRegisterUser() {
     setError("");
+    setAuthNotice("");
+    if (!email.includes("@")) {
+      setError("Ivesk teisinga el. pasta.");
+      return;
+    }
     if (password.length < 8) {
       setError("Slaptazodis turi buti bent 8 simboliu.");
       return;
@@ -296,14 +310,77 @@ export default function HomePage() {
     }
     try {
       await register(email, password);
-      await login(email, password);
-      setLoggedIn(true);
       setPassword("");
       setConfirmPassword("");
+      setAuthNotice("Registracija sekminga. Dabar prisijunk su tuo paciu el. pastu.");
       resetRobotCheck();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Auth klaida.");
     }
+  }
+
+  async function handleUserLogin() {
+    setError("");
+    setAuthNotice("");
+    if (!email.includes("@")) {
+      setError("Ivesk teisinga el. pasta.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Slaptazodis turi buti bent 8 simboliu.");
+      return;
+    }
+    try {
+      await login(email, password);
+      setLoggedIn(true);
+      setPassword("");
+      setConfirmPassword("");
+      setAuthNotice("Prisijungimas sekmingas.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Prisijungimo klaida.");
+    }
+  }
+
+  async function handleAdminLogin() {
+    setError("");
+    setAuthNotice("");
+    if (email.trim().toLowerCase() !== ADMIN_EMAIL) {
+      setError(`Admin prisijungimui naudok admin el. pasta: ${ADMIN_EMAIL}`);
+      return;
+    }
+    if (password.length < 8) {
+      setError("Slaptazodis turi buti bent 8 simboliu.");
+      return;
+    }
+    if (Number(robotAnswer) !== robotA + robotB) {
+      setError("Neteisingas roboto patikrinimas.");
+      resetRobotCheck();
+      return;
+    }
+
+    try {
+      await login(email, password);
+      setLoggedIn(true);
+      setPassword("");
+      setConfirmPassword("");
+      setAdminOpen(true);
+      setAuthNotice("Admin prisijungimas sekmingas.");
+      resetRobotCheck();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Admin auth klaida.");
+    }
+  }
+
+  function handleAdminLogout() {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(STORAGE_KEYS.token);
+    }
+    setLoggedIn(false);
+    setAdminOpen(false);
+    setStatus("idle");
+    setError("");
+    setResult(null);
+    setAuditId("");
   }
 
   return (
@@ -354,9 +431,14 @@ export default function HomePage() {
 
         <div className="admin-access">
           {isAdminEmail ? (
-            <button className={adminOpen ? "active" : ""} onClick={() => setAdminOpen((v) => !v)} type="button">
-              {adminOpen ? "Uzdaryti admin meniu" : "Atidaryti admin meniu"}
-            </button>
+            <>
+              <button className={adminOpen ? "active" : ""} onClick={() => setAdminOpen((v) => !v)} type="button">
+                {adminOpen ? "Uzdaryti admin meniu" : "Atidaryti admin meniu"}
+              </button>
+              <button type="button" className="secondary-btn" onClick={handleAdminLogout}>
+                Atsijungti is admin
+              </button>
+            </>
           ) : (
             <p className="admin-hint">Admin meniu matomas tik prisijungus su admin el. pastu: {ADMIN_EMAIL}</p>
           )}
@@ -386,11 +468,19 @@ export default function HomePage() {
                     <p>
                       Projektai: {item.projects_count} | Auditai: {item.audits_count}
                     </p>
+                    <p>Vidutinis ivertinimas: {item.average_score !== null ? `${item.average_score}/100` : "-"}</p>
                     <p>Paskutinis auditas: {item.last_audit_at ? new Date(item.last_audit_at).toLocaleString() : "-"}</p>
                     <p>Tikrinti puslapiai:</p>
                     <ul>
                       {item.pages_checked.length > 0 ? (
-                        item.pages_checked.map((pageUrl) => <li key={`${item.user_id}-${pageUrl}`}>{pageUrl}</li>)
+                        item.pages_checked.map((page) => (
+                          <li key={`${item.user_id}-${page.url}`}>
+                            <strong>{page.url}</strong>
+                            <p>
+                              Status: {page.last_status} | Ivertinimas: {page.last_score ?? "-"} | Auditai: {page.audits_count}
+                            </p>
+                          </li>
+                        ))
                       ) : (
                         <li>Nera nuskenuotu puslapiu</li>
                       )}
@@ -436,27 +526,71 @@ export default function HomePage() {
       )}
 
       <section className="card">
-        <label>
-          El. pastas
-          <input value={email} onChange={(event) => setEmail(event.target.value)} />
-        </label>
+        <div className="auth-block">
+          <h3>Prisijungimo blokas</h3>
 
-        <label>
-          Slaptazodis
-          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-        </label>
+          <label>
+            El. pastas
+            <input value={email} onChange={(event) => setEmail(event.target.value)} />
+          </label>
 
-        <label>
-          Pakartok slaptazodi
-          <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
-        </label>
+          <label>
+            Slaptazodis
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          </label>
 
-        <label>
-          Roboto patikrinimas: kiek yra {robotA} + {robotB}?
-          <input value={robotAnswer} onChange={(event) => setRobotAnswer(event.target.value)} placeholder="Ivesk atsakyma" />
-        </label>
+          <div className="auth-mode-tabs">
+            <button
+              type="button"
+              className={authMode === "register" ? "active" : ""}
+              onClick={() => setAuthMode("register")}
+            >
+              Registracija
+            </button>
+            <button type="button" className={authMode === "login" ? "active" : ""} onClick={() => setAuthMode("login")}>
+              Prisijungti
+            </button>
+          </div>
 
-        <button onClick={handleAuth}>{loggedIn ? "Prisijungta" : "Registruotis ir prisijungti"}</button>
+          {authMode === "register" && (
+            <>
+              <label>
+                Pakartok slaptazodi
+                <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+              </label>
+
+              <label>
+                Roboto patikrinimas: kiek yra {robotA} + {robotB}?
+                <input value={robotAnswer} onChange={(event) => setRobotAnswer(event.target.value)} placeholder="Ivesk atsakyma" />
+              </label>
+            </>
+          )}
+
+          {authMode === "login" && (
+            <label>
+              Roboto patikrinimas: kiek yra {robotA} + {robotB}?
+              <input value={robotAnswer} onChange={(event) => setRobotAnswer(event.target.value)} placeholder="Ivesk atsakyma" />
+            </label>
+          )}
+
+          <div className="auth-buttons">
+            {authMode === "register" ? (
+              <button type="button" onClick={handleRegisterUser}>
+                Registruoti nauja vartotoja
+              </button>
+            ) : (
+              <button type="button" onClick={handleUserLogin}>
+                Prisijungti kaip vartotojas
+              </button>
+            )}
+            <button type="button" className="secondary-btn" onClick={handleAdminLogin}>
+              Prisijungti kaip adminas
+            </button>
+          </div>
+
+          {loggedIn && <p className="status">Prisijungta su: {email}</p>}
+          {authNotice && <p className="status">{authNotice}</p>}
+        </div>
 
         <label>
           Projekto pavadinimas

@@ -389,17 +389,37 @@ class DataStore:
                         .all()
                     )
 
-                pages_checked: list[str] = []
-                seen: set[str] = set()
+                page_stats: dict[str, dict[str, object]] = {}
+                scored_audits = [audit for audit in audits if audit.score is not None]
+
                 for audit in audits:
-                    if audit.url in seen:
-                        continue
-                    seen.add(audit.url)
-                    pages_checked.append(audit.url)
-                    if len(pages_checked) >= 8:
-                        break
+                    stats = page_stats.get(audit.url)
+                    if stats is None:
+                        stats = {
+                            "url": audit.url,
+                            "audits_count": 0,
+                            "last_status": audit.status,
+                            "last_score": audit.score,
+                            "last_audit_at": audit.created_at.isoformat(),
+                        }
+                        page_stats[audit.url] = stats
+
+                    stats["audits_count"] = int(stats["audits_count"]) + 1
+
+                    last_time = datetime.fromisoformat(str(stats["last_audit_at"]))
+                    if audit.created_at > last_time:
+                        stats["last_status"] = audit.status
+                        stats["last_score"] = audit.score
+                        stats["last_audit_at"] = audit.created_at.isoformat()
+
+                pages_checked = sorted(
+                    page_stats.values(),
+                    key=lambda item: str(item["last_audit_at"]),
+                    reverse=True,
+                )[:8]
 
                 last_audit_at = audits[0].created_at.isoformat() if audits else None
+                average_score = round(sum(audit.score or 0 for audit in scored_audits) / len(scored_audits), 2) if scored_audits else None
 
                 results.append(
                     {
@@ -409,6 +429,7 @@ class DataStore:
                         "projects_count": len(projects),
                         "audits_count": len(audits),
                         "last_audit_at": last_audit_at,
+                        "average_score": average_score,
                         "pages_checked": pages_checked,
                     }
                 )
