@@ -68,6 +68,32 @@ const defaultAdBlocks: AdBlock[] = [
   { title: "Reklama B4", note: "Vieta remiamam straipsniui", url: "" }
 ];
 
+function mergeAdBlocksWithDefaults(saved: unknown): AdBlock[] {
+  if (!Array.isArray(saved) || saved.length !== defaultAdBlocks.length) {
+    return defaultAdBlocks;
+  }
+
+  return defaultAdBlocks.map((fallback, index) => {
+    const rawItem = saved[index];
+    if (!rawItem || typeof rawItem !== "object") {
+      return fallback;
+    }
+
+    const item = rawItem as Partial<AdBlock>;
+    const title = typeof item.title === "string" ? item.title.trim() : "";
+    const note = typeof item.note === "string" ? item.note.trim() : "";
+    const url = typeof item.url === "string" ? item.url.trim() : "";
+    const isLegacyPlaceholder = /^Reklama\s+[AB]\d$/i.test(title);
+    const shouldUseDefaultUrl = !url && Boolean(fallback.url) && (isLegacyPlaceholder || title === fallback.title || !title);
+
+    return {
+      title: title || fallback.title,
+      note: note || fallback.note,
+      url: shouldUseDefaultUrl ? fallback.url : url
+    };
+  });
+}
+
 function isNotMeasured(value: string): boolean {
   const normalized = value.toLowerCase();
   return normalized.includes("n/a") || normalized.includes("nepamatuota");
@@ -133,10 +159,8 @@ export default function HomePage() {
     if (savedTheme === "corporate" || savedTheme === "modern") setTheme(savedTheme);
     if (savedAdBlocks) {
       try {
-        const parsed = JSON.parse(savedAdBlocks) as AdBlock[];
-        if (Array.isArray(parsed) && parsed.length === 8) {
-          setAdBlocks(parsed);
-        }
+        const parsed = JSON.parse(savedAdBlocks) as unknown;
+        setAdBlocks(mergeAdBlocksWithDefaults(parsed));
       } catch {
         setAdBlocks(defaultAdBlocks);
       }
