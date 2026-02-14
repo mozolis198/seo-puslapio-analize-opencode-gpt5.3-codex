@@ -526,72 +526,6 @@ export default function HomePage() {
       )}
 
       <section className="card">
-        <div className="auth-block">
-          <h3>Prisijungimas</h3>
-
-          <label>
-            El. pastas
-            <input value={email} onChange={(event) => setEmail(event.target.value)} />
-          </label>
-
-          <label>
-            Slaptazodis
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-          </label>
-
-          <div className="auth-mode-tabs">
-            <button
-              type="button"
-              className={authMode === "register" ? "active" : ""}
-              onClick={() => setAuthMode("register")}
-            >
-              Registracija
-            </button>
-            <button type="button" className={authMode === "login" ? "active" : ""} onClick={() => setAuthMode("login")}>
-              Prisijungti
-            </button>
-          </div>
-
-          {authMode === "register" && (
-            <>
-              <label>
-                Pakartok slaptazodi
-                <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
-              </label>
-
-              <label>
-                Roboto patikrinimas: kiek yra {robotA} + {robotB}?
-                <input value={robotAnswer} onChange={(event) => setRobotAnswer(event.target.value)} placeholder="Ivesk atsakyma" />
-              </label>
-            </>
-          )}
-
-          {authMode === "login" && (
-            <label>
-              Roboto patikrinimas: kiek yra {robotA} + {robotB}?
-              <input value={robotAnswer} onChange={(event) => setRobotAnswer(event.target.value)} placeholder="Ivesk atsakyma" />
-            </label>
-          )}
-
-          <div className="auth-buttons">
-            {authMode === "register" ? (
-              <button type="button" onClick={handleRegisterUser}>
-                Registruoti nauja vartotoja
-              </button>
-            ) : (
-              <button type="button" onClick={handleUserLogin}>
-                Prisijungti kaip vartotojas
-              </button>
-            )}
-            <button type="button" className="secondary-btn" onClick={handleAdminLogin}>
-              Prisijungti kaip adminas
-            </button>
-          </div>
-
-          {loggedIn && <p className="status">Prisijungta su: {email}</p>}
-          {authNotice && <p className="status">{authNotice}</p>}
-        </div>
-
         <label>
           Projekto pavadinimas
           <input value={name} onChange={(event) => setName(event.target.value)} />
@@ -805,6 +739,72 @@ export default function HomePage() {
             )}
           </article>
         ))}
+
+        <article className="side-block auth-block in-rail">
+          <h3>Prisijungimas</h3>
+
+          <label>
+            El. pastas
+            <input value={email} onChange={(event) => setEmail(event.target.value)} />
+          </label>
+
+          <label>
+            Slaptazodis
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          </label>
+
+          <div className="auth-mode-tabs">
+            <button
+              type="button"
+              className={authMode === "register" ? "active" : ""}
+              onClick={() => setAuthMode("register")}
+            >
+              Registracija
+            </button>
+            <button type="button" className={authMode === "login" ? "active" : ""} onClick={() => setAuthMode("login")}>
+              Prisijungti
+            </button>
+          </div>
+
+          {authMode === "register" && (
+            <>
+              <label>
+                Pakartok slaptazodi
+                <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+              </label>
+
+              <label>
+                Roboto patikrinimas: kiek yra {robotA} + {robotB}?
+                <input value={robotAnswer} onChange={(event) => setRobotAnswer(event.target.value)} placeholder="Ivesk atsakyma" />
+              </label>
+            </>
+          )}
+
+          {authMode === "login" && (
+            <label>
+              Roboto patikrinimas: kiek yra {robotA} + {robotB}?
+              <input value={robotAnswer} onChange={(event) => setRobotAnswer(event.target.value)} placeholder="Ivesk atsakyma" />
+            </label>
+          )}
+
+          <div className="auth-buttons">
+            {authMode === "register" ? (
+              <button type="button" onClick={handleRegisterUser}>
+                Registruoti nauja vartotoja
+              </button>
+            ) : (
+              <button type="button" onClick={handleUserLogin}>
+                Prisijungti kaip vartotojas
+              </button>
+            )}
+            <button type="button" className="secondary-btn" onClick={handleAdminLogin}>
+              Prisijungti kaip adminas
+            </button>
+          </div>
+
+          {loggedIn && <p className="status">Prisijungta su: {email}</p>}
+          {authNotice && <p className="status">{authNotice}</p>}
+        </article>
       </aside>
     </main>
   );
