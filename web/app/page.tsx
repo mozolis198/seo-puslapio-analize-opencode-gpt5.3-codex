@@ -55,7 +55,11 @@ type AdminUserOverview = {
 
 const defaultAdBlocks: AdBlock[] = [
   { title: "Reklama A1", note: "Vieta banneriui 300x250", url: "" },
-  { title: "Reklama A2", note: "Vieta remiamam pasiulymui", url: "" },
+  {
+    title: "SE Ranking",
+    note: "Raktazodziai, pozicijos ir SEO auditas vienoje vietoje",
+    url: "https://seranking.com/?ga=79842&source=link&utm_source=seo-auditas&utm_medium=sidebar&utm_campaign=A2"
+  },
   { title: "Reklama A3", note: "Vieta native reklamai", url: "" },
   { title: "Reklama A4", note: "Vieta partnerio baneriui", url: "" },
   { title: "Reklama B1", note: "Vieta banneriui 300x250", url: "" },
