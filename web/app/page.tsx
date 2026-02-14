@@ -527,7 +527,7 @@ export default function HomePage() {
 
       <section className="card">
         <div className="auth-block">
-          <h3>Prisijungimo blokas</h3>
+          <h3>Prisijungimas</h3>
 
           <label>
             El. pastas
