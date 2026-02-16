@@ -76,10 +76,6 @@ function mergeAdBlocksWithDefaults(saved: unknown): AdBlock[] {
   }
 
   return defaultAdBlocks.map((fallback, index) => {
-    if (index === 1) {
-      return fallback;
-    }
-
     const rawItem = saved[index];
     if (!rawItem || typeof rawItem !== "object") {
       return fallback;
@@ -91,7 +87,9 @@ function mergeAdBlocksWithDefaults(saved: unknown): AdBlock[] {
     const url = typeof item.url === "string" ? item.url.trim() : "";
     const linkText = typeof item.linkText === "string" ? item.linkText.trim() : "";
     const isLegacyPlaceholder = /^Reklama\s+[AB]\d$/i.test(title);
-    const shouldUseDefaultUrl = !url && Boolean(fallback.url) && (isLegacyPlaceholder || title === fallback.title || !title);
+    const samePartnerLegacyTitle = fallback.title.toLowerCase().includes("se ranking") && title.toLowerCase().includes("se ranking");
+    const shouldUseDefaultUrl =
+      !url && Boolean(fallback.url) && (isLegacyPlaceholder || title === fallback.title || !title || samePartnerLegacyTitle);
 
     return {
       title: title || fallback.title,
@@ -159,6 +157,8 @@ export default function HomePage() {
   const [adminUsersError, setAdminUsersError] = useState("");
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [adBlocks, setAdBlocks] = useState<AdBlock[]>(defaultAdBlocks);
+  const [savedAdBlocks, setSavedAdBlocks] = useState<AdBlock[]>(defaultAdBlocks);
+  const [adSaveNotice, setAdSaveNotice] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [status, setStatus] = useState<string>("idle");
   const [error, setError] = useState<string>("");
@@ -185,10 +185,16 @@ export default function HomePage() {
     if (savedAdBlocks) {
       try {
         const parsed = JSON.parse(savedAdBlocks) as unknown;
-        setAdBlocks(mergeAdBlocksWithDefaults(parsed));
+        const merged = mergeAdBlocksWithDefaults(parsed);
+        setAdBlocks(merged);
+        setSavedAdBlocks(merged);
       } catch {
         setAdBlocks(defaultAdBlocks);
+        setSavedAdBlocks(defaultAdBlocks);
       }
+    } else {
+      setAdBlocks(defaultAdBlocks);
+      setSavedAdBlocks(defaultAdBlocks);
     }
   }, []);
 
@@ -212,16 +218,30 @@ export default function HomePage() {
     window.localStorage.setItem(STORAGE_KEYS.theme, theme);
   }, [theme]);
 
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.adBlocks, JSON.stringify(adBlocks));
-  }, [adBlocks]);
-
   function updateAdBlock(index: number, field: keyof AdBlock, value: string) {
+    setAdSaveNotice("");
     setAdBlocks((current) => current.map((item, idx) => (idx === index ? { ...item, [field]: value } : item)));
   }
 
   function resetAdBlocks() {
+    setAdSaveNotice("Numatyti blokai paruosti. Kiekvienam blokui paspausk Issaugoti bloka.");
     setAdBlocks(defaultAdBlocks);
+  }
+
+  function isAdBlockDirty(index: number): boolean {
+    const current = adBlocks[index];
+    const saved = savedAdBlocks[index];
+    if (!current || !saved) {
+      return true;
+    }
+    return current.title !== saved.title || current.note !== saved.note || current.url !== saved.url || current.linkText !== saved.linkText;
+  }
+
+  function saveAdBlock(index: number) {
+    const nextSaved = adBlocks.map((item, idx) => (idx === index ? { ...item } : savedAdBlocks[idx] || item));
+    setSavedAdBlocks(nextSaved);
+    window.localStorage.setItem(STORAGE_KEYS.adBlocks, JSON.stringify(nextSaved));
+    setAdSaveNotice(`Blokas ${index + 1} issaugotas.`);
   }
 
   function resetRobotCheck() {
@@ -582,6 +602,7 @@ export default function HomePage() {
               Atstatyti numatytus blokus
             </button>
           </div>
+          {adSaveNotice && <p className="status">{adSaveNotice}</p>}
 
           <article className="admin-users">
             <h3>Vartotoju sarasas ir tikrinti puslapiai</h3>
@@ -656,6 +677,9 @@ export default function HomePage() {
                     placeholder="Atidaryti reklama"
                   />
                 </label>
+                <button type="button" className="secondary-btn" onClick={() => saveAdBlock(index)} disabled={!isAdBlockDirty(index)}>
+                  {isAdBlockDirty(index) ? "Issaugoti bloka" : "Issaugota"}
+                </button>
               </article>
             ))}
           </div>
