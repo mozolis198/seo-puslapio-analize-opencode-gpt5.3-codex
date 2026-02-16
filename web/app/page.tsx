@@ -58,7 +58,7 @@ const defaultAdBlocks: AdBlock[] = [
   {
     title: "SE Ranking: SEO irankis",
     note: "Stebek pozicijas, raktazodzius ir technini audita vienoje platformoje",
-    url: "https://seranking.com/?ga=79842&source=link&utm_source=seo-auditas&utm_medium=sidebar&utm_campaign=A2"
+    url: "https://seranking.com/?ga=79842&source=link"
   },
   { title: "Reklama A3", note: "Vieta native reklamai", url: "" },
   { title: "Reklama A4", note: "Vieta partnerio baneriui", url: "" },
