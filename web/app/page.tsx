@@ -107,6 +107,23 @@ function isNotMeasured(value: string): boolean {
   return normalized.includes("n/a") || normalized.includes("nepamatuota");
 }
 
+function localizeAuthError(message: string): string {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("invalid credentials")) {
+    return "Neteisingas el. pastas arba slaptazodis.";
+  }
+  if (normalized.includes("email already registered")) {
+    return "Toks el. pastas jau uzregistruotas.";
+  }
+  if (normalized.includes("failed to login")) {
+    return "Prisijungti nepavyko.";
+  }
+  if (normalized.includes("failed to register")) {
+    return "Registracija nepavyko.";
+  }
+  return message;
+}
+
 const statusText: Record<string, string> = {
   queued: "In queue",
   running: "Running scan",
@@ -378,7 +395,7 @@ export default function HomePage() {
       setAuthNotice("Registracija sekminga. Dabar prisijunk su tuo paciu el. pastu.");
       resetRobotCheck();
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Auth klaida.");
+      setAuthError(err instanceof Error ? localizeAuthError(err.message) : "Auth klaida.");
     }
   }
 
@@ -400,7 +417,7 @@ export default function HomePage() {
       setConfirmPassword("");
       setAuthNotice("Prisijungimas sekmingas.");
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Prisijungimo klaida.");
+      setAuthError(err instanceof Error ? localizeAuthError(err.message) : "Prisijungimo klaida.");
     }
   }
 
@@ -441,7 +458,7 @@ export default function HomePage() {
 
       resetRobotCheck();
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Admin auth klaida.");
+      setAuthError(err instanceof Error ? localizeAuthError(err.message) : "Admin auth klaida.");
     }
   }
 
@@ -884,7 +901,7 @@ export default function HomePage() {
           <div className="auth-buttons">
             {authMode === "register" ? (
               <button type="submit">
-                Registruoti nauja vartotoja
+                Registruoti vartotoja
               </button>
             ) : (
               <button type="submit">

@@ -303,6 +303,10 @@ button:hover:not(:disabled) {
   gap: 8px;
 }
 
+.auth-block.in-rail .auth-buttons {
+  grid-template-columns: 1fr;
+}
+
 .auth-mode-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
