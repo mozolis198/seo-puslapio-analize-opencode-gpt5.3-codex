@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   createProject,
   createSchedule,
@@ -407,6 +407,15 @@ export default function HomePage() {
     }
   }
 
+  async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (authMode === "register") {
+      await handleRegisterUser();
+      return;
+    }
+    await handleUserLogin();
+  }
+
   function handleAdminLogout() {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(STORAGE_KEYS.token);
@@ -421,7 +430,7 @@ export default function HomePage() {
 
   return (
     <main className={`layout-shell ${theme === "modern" ? "theme-modern" : "theme-corporate"}`}>
-      <aside className="side-rail">
+      <aside className="side-rail side-rail-auth">
         {adBlocks.slice(0, 4).map((block, index) => (
           <article key={`left-ad-${index}`} className="side-block ad-block">
             <h4 className="ad-title">
@@ -784,7 +793,7 @@ export default function HomePage() {
           </article>
         ))}
 
-        <article className="side-block auth-block in-rail">
+        <form className="side-block auth-block in-rail" onSubmit={handleAuthSubmit}>
           <h3>Prisijungimas</h3>
 
           <label>
@@ -833,11 +842,11 @@ export default function HomePage() {
 
           <div className="auth-buttons">
             {authMode === "register" ? (
-              <button type="button" onClick={handleRegisterUser}>
+              <button type="submit">
                 Registruoti nauja vartotoja
               </button>
             ) : (
-              <button type="button" onClick={handleUserLogin}>
+              <button type="submit">
                 Prisijungti kaip vartotojas
               </button>
             )}
@@ -848,7 +857,8 @@ export default function HomePage() {
 
           {loggedIn && <p className="status">Prisijungta su: {email}</p>}
           {authNotice && <p className="status">{authNotice}</p>}
-        </article>
+          {error && <p className="error">{error}</p>}
+        </form>
       </aside>
     </main>
   );
