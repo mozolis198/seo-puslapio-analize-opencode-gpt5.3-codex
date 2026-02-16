@@ -122,6 +122,15 @@ function localizeAuthError(message: string): string {
   return message;
 }
 
+function extractIframeSrc(input: string): string {
+  const value = input.trim();
+  if (!value.toLowerCase().includes("<iframe")) {
+    return "";
+  }
+  const match = value.match(/src\s*=\s*['\"]([^'\"]+)['\"]/i);
+  return match?.[1] || "";
+}
+
 const statusText: Record<string, string> = {
   queued: "In queue",
   running: "Running scan",
@@ -533,20 +542,27 @@ export default function HomePage() {
   return (
     <main className={`layout-shell ${theme === "modern" ? "theme-modern" : "theme-corporate"}`}>
       <aside className="side-rail side-rail-left">
-        {adBlocks.slice(0, 4).map((block, index) => (
-          <article key={`left-ad-${index}`} className="side-block ad-block">
-            <h4 className="ad-title">
-              <span className="ad-badge">{index + 1}</span>
-              <span>{block.title}</span>
-            </h4>
-            <p className="side-note">{block.note}</p>
-            {block.url && (
-              <a className="ad-link" href={block.url} target="_blank" rel="noreferrer">
-                {block.linkText}
-              </a>
-            )}
-          </article>
-        ))}
+        {adBlocks.slice(0, 4).map((block, index) => {
+          const iframeSrc = extractIframeSrc(block.url);
+          return (
+            <article key={`left-ad-${index}`} className="side-block ad-block">
+              <h4 className="ad-title">
+                <span className="ad-badge">{index + 1}</span>
+                <span>{block.title}</span>
+              </h4>
+              <p className="side-note">{block.note}</p>
+              {iframeSrc ? (
+                <iframe className="ad-embed" src={iframeSrc} title={`ad-embed-${index + 1}`} loading="lazy" />
+              ) : (
+                block.url && (
+                  <a className="ad-link" href={block.url} target="_blank" rel="noreferrer">
+                    {block.linkText}
+                  </a>
+                )
+              )}
+            </article>
+          );
+        })}
       </aside>
 
       <div className="page">
@@ -666,7 +682,7 @@ export default function HomePage() {
                   <input
                     value={block.url}
                     onChange={(event) => updateAdBlock(index, "url", event.target.value)}
-                    placeholder="https://..."
+                    placeholder="https://... arba <iframe ...>"
                   />
                 </label>
                 <label>
@@ -886,20 +902,27 @@ export default function HomePage() {
       </div>
 
       <aside className="side-rail side-rail-auth">
-        {adBlocks.slice(4).map((block, index) => (
-          <article key={`right-ad-${index}`} className="side-block ad-block">
-            <h4 className="ad-title">
-              <span className="ad-badge">{index + 5}</span>
-              <span>{block.title}</span>
-            </h4>
-            <p className="side-note">{block.note}</p>
-            {block.url && (
-              <a className="ad-link" href={block.url} target="_blank" rel="noreferrer">
-                {block.linkText}
-              </a>
-            )}
-          </article>
-        ))}
+        {adBlocks.slice(4).map((block, index) => {
+          const iframeSrc = extractIframeSrc(block.url);
+          return (
+            <article key={`right-ad-${index}`} className="side-block ad-block">
+              <h4 className="ad-title">
+                <span className="ad-badge">{index + 5}</span>
+                <span>{block.title}</span>
+              </h4>
+              <p className="side-note">{block.note}</p>
+              {iframeSrc ? (
+                <iframe className="ad-embed" src={iframeSrc} title={`ad-embed-${index + 5}`} loading="lazy" />
+              ) : (
+                block.url && (
+                  <a className="ad-link" href={block.url} target="_blank" rel="noreferrer">
+                    {block.linkText}
+                  </a>
+                )
+              )}
+            </article>
+          );
+        })}
 
         <form className="side-block auth-block in-rail" onSubmit={handleAuthSubmit}>
           <h3>Prisijungimas</h3>

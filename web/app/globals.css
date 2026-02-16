@@ -179,6 +179,15 @@ body {
   font-size: 0.86rem;
 }
 
+.ad-embed {
+  margin-top: 6px;
+  width: 100%;
+  min-height: 188px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+}
+
 .ad-badge {
   width: 24px;
   height: 24px;
