@@ -34,6 +34,7 @@ type AdBlock = {
   title: string;
   note: string;
   url: string;
+  linkText: string;
 };
 
 type AdminUserOverview = {
@@ -54,18 +55,19 @@ type AdminUserOverview = {
 };
 
 const defaultAdBlocks: AdBlock[] = [
-  { title: "Reklama A1", note: "Vieta banneriui 300x250", url: "" },
+  { title: "Reklama A1", note: "Vieta banneriui 300x250", url: "", linkText: "Atidaryti reklama" },
   {
     title: "SE Ranking: SEO irankis",
     note: "Stebek pozicijas, raktazodzius ir technini audita vienoje platformoje",
-    url: "https://seranking.com/?ga=79842&source=link"
+    url: "https://seranking.com/?ga=79842&source=link",
+    linkText: "Home page"
   },
-  { title: "Reklama A3", note: "Vieta native reklamai", url: "" },
-  { title: "Reklama A4", note: "Vieta partnerio baneriui", url: "" },
-  { title: "Reklama B1", note: "Vieta banneriui 300x250", url: "" },
-  { title: "Reklama B2", note: "Vieta partnerio nuorodai", url: "" },
-  { title: "Reklama B3", note: "Vieta native reklamai", url: "" },
-  { title: "Reklama B4", note: "Vieta remiamam straipsniui", url: "" }
+  { title: "Reklama A3", note: "Vieta native reklamai", url: "", linkText: "Atidaryti reklama" },
+  { title: "Reklama A4", note: "Vieta partnerio baneriui", url: "", linkText: "Atidaryti reklama" },
+  { title: "Reklama B1", note: "Vieta banneriui 300x250", url: "", linkText: "Atidaryti reklama" },
+  { title: "Reklama B2", note: "Vieta partnerio nuorodai", url: "", linkText: "Atidaryti reklama" },
+  { title: "Reklama B3", note: "Vieta native reklamai", url: "", linkText: "Atidaryti reklama" },
+  { title: "Reklama B4", note: "Vieta remiamam straipsniui", url: "", linkText: "Atidaryti reklama" }
 ];
 
 function mergeAdBlocksWithDefaults(saved: unknown): AdBlock[] {
@@ -87,13 +89,15 @@ function mergeAdBlocksWithDefaults(saved: unknown): AdBlock[] {
     const title = typeof item.title === "string" ? item.title.trim() : "";
     const note = typeof item.note === "string" ? item.note.trim() : "";
     const url = typeof item.url === "string" ? item.url.trim() : "";
+    const linkText = typeof item.linkText === "string" ? item.linkText.trim() : "";
     const isLegacyPlaceholder = /^Reklama\s+[AB]\d$/i.test(title);
     const shouldUseDefaultUrl = !url && Boolean(fallback.url) && (isLegacyPlaceholder || title === fallback.title || !title);
 
     return {
       title: title || fallback.title,
       note: note || fallback.note,
-      url: shouldUseDefaultUrl ? fallback.url : url
+      url: shouldUseDefaultUrl ? fallback.url : url,
+      linkText: linkText || fallback.linkText
     };
   });
 }
@@ -427,7 +431,7 @@ export default function HomePage() {
             <p className="side-note">{block.note}</p>
             {block.url && (
               <a className="ad-link" href={block.url} target="_blank" rel="noreferrer">
-                Atidaryti reklama
+                {block.linkText}
               </a>
             )}
           </article>
@@ -549,6 +553,14 @@ export default function HomePage() {
                     value={block.url}
                     onChange={(event) => updateAdBlock(index, "url", event.target.value)}
                     placeholder="https://..."
+                  />
+                </label>
+                <label>
+                  Mygtuko tekstas
+                  <input
+                    value={block.linkText}
+                    onChange={(event) => updateAdBlock(index, "linkText", event.target.value)}
+                    placeholder="Atidaryti reklama"
                   />
                 </label>
               </article>
@@ -766,7 +778,7 @@ export default function HomePage() {
             <p className="side-note">{block.note}</p>
             {block.url && (
               <a className="ad-link" href={block.url} target="_blank" rel="noreferrer">
-                Atidaryti reklama
+                {block.linkText}
               </a>
             )}
           </article>
