@@ -145,6 +145,7 @@ export default function HomePage() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [status, setStatus] = useState<string>("idle");
   const [error, setError] = useState<string>("");
+  const [authError, setAuthError] = useState<string>("");
   const [authNotice, setAuthNotice] = useState<string>("");
   const [auditId, setAuditId] = useState<string>("");
   const [result, setResult] = useState<ResultState>(null);
@@ -351,22 +352,22 @@ export default function HomePage() {
   }
 
   async function handleRegisterUser() {
-    setError("");
+    setAuthError("");
     setAuthNotice("");
     if (!email.includes("@")) {
-      setError("Ivesk teisinga el. pasta.");
+      setAuthError("Ivesk teisinga el. pasta.");
       return;
     }
     if (password.length < 8) {
-      setError("Slaptazodis turi buti bent 8 simboliu.");
+      setAuthError("Slaptazodis turi buti bent 8 simboliu.");
       return;
     }
     if (password !== confirmPassword) {
-      setError("Slaptazodziai nesutampa.");
+      setAuthError("Slaptazodziai nesutampa.");
       return;
     }
     if (Number(robotAnswer) !== robotA + robotB) {
-      setError("Neteisingas roboto patikrinimas.");
+      setAuthError("Neteisingas roboto patikrinimas.");
       resetRobotCheck();
       return;
     }
@@ -377,19 +378,19 @@ export default function HomePage() {
       setAuthNotice("Registracija sekminga. Dabar prisijunk su tuo paciu el. pastu.");
       resetRobotCheck();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Auth klaida.");
+      setAuthError(err instanceof Error ? err.message : "Auth klaida.");
     }
   }
 
   async function handleUserLogin() {
-    setError("");
+    setAuthError("");
     setAuthNotice("");
     if (!email.includes("@")) {
-      setError("Ivesk teisinga el. pasta.");
+      setAuthError("Ivesk teisinga el. pasta.");
       return;
     }
     if (password.length < 8) {
-      setError("Slaptazodis turi buti bent 8 simboliu.");
+      setAuthError("Slaptazodis turi buti bent 8 simboliu.");
       return;
     }
     try {
@@ -399,23 +400,23 @@ export default function HomePage() {
       setConfirmPassword("");
       setAuthNotice("Prisijungimas sekmingas.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Prisijungimo klaida.");
+      setAuthError(err instanceof Error ? err.message : "Prisijungimo klaida.");
     }
   }
 
   async function handleAdminLogin() {
-    setError("");
+    setAuthError("");
     setAuthNotice("");
     if (!email.includes("@")) {
-      setError("Ivesk teisinga el. pasta.");
+      setAuthError("Ivesk teisinga el. pasta.");
       return;
     }
     if (password.length < 8) {
-      setError("Slaptazodis turi buti bent 8 simboliu.");
+      setAuthError("Slaptazodis turi buti bent 8 simboliu.");
       return;
     }
     if (Number(robotAnswer) !== robotA + robotB) {
-      setError("Neteisingas roboto patikrinimas.");
+      setAuthError("Neteisingas roboto patikrinimas.");
       resetRobotCheck();
       return;
     }
@@ -440,7 +441,7 @@ export default function HomePage() {
 
       resetRobotCheck();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Admin auth klaida.");
+      setAuthError(err instanceof Error ? err.message : "Admin auth klaida.");
     }
   }
 
@@ -461,6 +462,7 @@ export default function HomePage() {
     setAdminOpen(false);
     setStatus("idle");
     setError("");
+    setAuthError("");
     setResult(null);
     setAuditId("");
   }
@@ -896,7 +898,7 @@ export default function HomePage() {
 
           {loggedIn && <p className="status">Prisijungta su: {email}</p>}
           {authNotice && <p className="status">{authNotice}</p>}
-          {error && <p className="error">{error}</p>}
+          {authError && <p className="error">{authError}</p>}
         </form>
       </aside>
     </main>

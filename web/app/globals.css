@@ -118,9 +118,10 @@ body {
 }
 
 .side-rail-auth {
-  max-height: calc(100vh - 20px);
-  overflow-y: auto;
-  padding-right: 4px;
+  position: static;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .side-block {
