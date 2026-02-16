@@ -469,7 +469,7 @@ export default function HomePage() {
 
   return (
     <main className={`layout-shell ${theme === "modern" ? "theme-modern" : "theme-corporate"}`}>
-      <aside className="side-rail">
+      <aside className="side-rail side-rail-left">
         {adBlocks.slice(0, 4).map((block, index) => (
           <article key={`left-ad-${index}`} className="side-block ad-block">
             <h4 className="ad-title">
