@@ -421,6 +421,20 @@ export default function HomePage() {
     }
   }
 
+  async function finalizeAdminSession(successNotice: string) {
+    try {
+      const items = await getAdminUsersOverview();
+      setIsAdminUser(true);
+      setAdminUsers(items);
+      setAdminOpen(true);
+      setAuthNotice(successNotice);
+    } catch {
+      setIsAdminUser(false);
+      setAdminOpen(false);
+      setAuthNotice("Prisijungta, bet si paskyra neturi admin teisiu.");
+    }
+  }
+
   async function handleAdminLogin() {
     setAuthError("");
     setAuthNotice("");
@@ -443,21 +457,33 @@ export default function HomePage() {
       setLoggedIn(true);
       setPassword("");
       setConfirmPassword("");
-
-      try {
-        const items = await getAdminUsersOverview();
-        setIsAdminUser(true);
-        setAdminUsers(items);
-        setAdminOpen(true);
-        setAuthNotice("Admin prisijungimas sekmingas.");
-      } catch {
-        setIsAdminUser(false);
-        setAdminOpen(false);
-        setAuthNotice("Prisijungta, bet si paskyra neturi admin teisiu.");
-      }
-
+      await finalizeAdminSession("Admin prisijungimas sekmingas.");
       resetRobotCheck();
     } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      const normalized = message.toLowerCase();
+
+      if (normalized.includes("invalid credentials")) {
+        try {
+          await register(email, password);
+          await login(email, password);
+          setLoggedIn(true);
+          setPassword("");
+          setConfirmPassword("");
+          await finalizeAdminSession("Admin paskyra sukurta ir prisijungta.");
+          resetRobotCheck();
+          return;
+        } catch (bootstrapErr) {
+          const bootstrapMessage = bootstrapErr instanceof Error ? bootstrapErr.message.toLowerCase() : "";
+          if (bootstrapMessage.includes("email already registered")) {
+            setAuthError("Neteisingas el. pastas arba slaptazodis.");
+            return;
+          }
+          setAuthError(bootstrapErr instanceof Error ? localizeAuthError(bootstrapErr.message) : "Admin auth klaida.");
+          return;
+        }
+      }
+
       setAuthError(err instanceof Error ? localizeAuthError(err.message) : "Admin auth klaida.");
     }
   }
