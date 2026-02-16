@@ -124,8 +124,6 @@ const STORAGE_KEYS = {
   adBlocks: "seo_ad_blocks"
 } as const;
 
-const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "mozolis@gmail.com").toLowerCase();
-
 export default function HomePage() {
   const [name, setName] = useState("Mano projektas");
   const [url, setUrl] = useState("https://example.com");
@@ -142,6 +140,7 @@ export default function HomePage() {
   const [adminUsers, setAdminUsers] = useState<AdminUserOverview[]>([]);
   const [adminUsersLoading, setAdminUsersLoading] = useState(false);
   const [adminUsersError, setAdminUsersError] = useState("");
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [adBlocks, setAdBlocks] = useState<AdBlock[]>(defaultAdBlocks);
   const [loggedIn, setLoggedIn] = useState(false);
   const [status, setStatus] = useState<string>("idle");
@@ -213,10 +212,37 @@ export default function HomePage() {
     setRobotAnswer("");
   }
 
-  const isAdminEmail = loggedIn && email.trim().toLowerCase() === ADMIN_EMAIL;
+  useEffect(() => {
+    if (!loggedIn) {
+      setIsAdminUser(false);
+      setAdminOpen(false);
+      setAdminUsers([]);
+      setAdminUsersError("");
+      return;
+    }
+
+    let cancelled = false;
+    getAdminUsersOverview()
+      .then((items) => {
+        if (!cancelled) {
+          setIsAdminUser(true);
+          setAdminUsers(items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsAdminUser(false);
+          setAdminOpen(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loggedIn]);
 
   useEffect(() => {
-    if (!isAdminEmail || !adminOpen) {
+    if (!isAdminUser || !adminOpen) {
       return;
     }
 
@@ -244,7 +270,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [isAdminEmail, adminOpen]);
+  }, [isAdminUser, adminOpen]);
 
   const badge = useMemo(() => {
     if (!result) return "-";
@@ -380,8 +406,8 @@ export default function HomePage() {
   async function handleAdminLogin() {
     setError("");
     setAuthNotice("");
-    if (email.trim().toLowerCase() !== ADMIN_EMAIL) {
-      setError(`Admin prisijungimui naudok admin el. pasta: ${ADMIN_EMAIL}`);
+    if (!email.includes("@")) {
+      setError("Ivesk teisinga el. pasta.");
       return;
     }
     if (password.length < 8) {
@@ -399,8 +425,19 @@ export default function HomePage() {
       setLoggedIn(true);
       setPassword("");
       setConfirmPassword("");
-      setAdminOpen(true);
-      setAuthNotice("Admin prisijungimas sekmingas.");
+
+      try {
+        const items = await getAdminUsersOverview();
+        setIsAdminUser(true);
+        setAdminUsers(items);
+        setAdminOpen(true);
+        setAuthNotice("Admin prisijungimas sekmingas.");
+      } catch {
+        setIsAdminUser(false);
+        setAdminOpen(false);
+        setAuthNotice("Prisijungta, bet si paskyra neturi admin teisiu.");
+      }
+
       resetRobotCheck();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Admin auth klaida.");
@@ -430,7 +467,7 @@ export default function HomePage() {
 
   return (
     <main className={`layout-shell ${theme === "modern" ? "theme-modern" : "theme-corporate"}`}>
-      <aside className="side-rail side-rail-auth">
+      <aside className="side-rail">
         {adBlocks.slice(0, 4).map((block, index) => (
           <article key={`left-ad-${index}`} className="side-block ad-block">
             <h4 className="ad-title">
@@ -475,7 +512,7 @@ export default function HomePage() {
         </div>
 
         <div className="admin-access">
-          {isAdminEmail ? (
+          {isAdminUser ? (
             <>
               <button className={adminOpen ? "active" : ""} onClick={() => setAdminOpen((v) => !v)} type="button">
                 {adminOpen ? "Uzdaryti admin meniu" : "Atidaryti admin meniu"}
@@ -484,13 +521,15 @@ export default function HomePage() {
                 Atsijungti is admin
               </button>
             </>
+          ) : loggedIn ? (
+            <p className="admin-hint">Prisijungta, bet si paskyra neturi admin teisiu.</p>
           ) : (
-            <p className="admin-hint">Admin meniu matomas tik prisijungus su admin el. pastu: {ADMIN_EMAIL}</p>
+            <p className="admin-hint">Prisijunk kaip adminas, kad matytum admin meniu.</p>
           )}
         </div>
       </section>
 
-      {isAdminEmail && adminOpen && (
+      {isAdminUser && adminOpen && (
         <section className="panel admin-panel">
           <div className="admin-header">
             <h2>Reklamu valdymas</h2>
@@ -777,7 +816,7 @@ export default function HomePage() {
       )}
       </div>
 
-      <aside className="side-rail">
+      <aside className="side-rail side-rail-auth">
         {adBlocks.slice(4).map((block, index) => (
           <article key={`right-ad-${index}`} className="side-block ad-block">
             <h4 className="ad-title">
